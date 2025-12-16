@@ -15,21 +15,21 @@
     },
     {
         "flag": "--top_k",
-        "name": "top k",
+        "name": "top_k",
         "type": "int",
         "help": "Number of top predictions (default 3)",
         "default": 3
     },
     {
         "flag": "--category_names",
-        "name": "/path/to/category_names",
+        "name": "category-name",
         "type": "str",
         "help": "File path to JSON file containing class names",
         "default": "../../assets/cat_to_name.json"
     },
     {
         "flag": "--gpu",
-        "name": "Use GPU",
+        "name": "gpu",
         "type": "bool",
         "help": "True to use GPU, otherwise false (default true)",
         "default": false

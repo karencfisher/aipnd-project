@@ -14,6 +14,13 @@
         "default": null
     },
     {
+        "flag": "--checkpoint_path",
+        "name": "checkpoint_path",
+        "type": "str",
+        "help": "path to checkpoint",
+        "default": "../models"
+    },
+    {
         "flag": "--top_k",
         "name": "top_k",
         "type": "int",
@@ -22,10 +29,10 @@
     },
     {
         "flag": "--category_names",
-        "name": "category-name",
+        "name": "category_names",
         "type": "str",
         "help": "File path to JSON file containing class names",
-        "default": "../../assets/cat_to_name.json"
+        "default": "../assets/cat_to_name.json"
     },
     {
         "flag": "--gpu",

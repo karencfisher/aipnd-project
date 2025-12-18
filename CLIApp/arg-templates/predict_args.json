@@ -1,44 +1,47 @@
 [
     {
-        "flag": null,
-        "type": "str",
-        "name": "image_file_path",
-        "help": "Path to the image file",
-        "default": null
+        "dest": "image_file_path",
+        "attributes" : {
+            "type": "str",
+            "help": "Path to the image file"
+        }
     },
     {
-        "flag": null,
-        "name": "model_checkpoint",
-        "type": "str",
-        "help": "The checkpointed model to use",
-        "default": null
+        "dest": "model_checkpoint",
+        "attributes": {
+            "type": "str",
+            "help": "The checkpointed model to use"
+        }
     },
     {
-        "flag": "--checkpoint_path",
-        "name": "checkpoint_path",
-        "type": "str",
-        "help": "path to checkpoint",
-        "default": "../models"
+        "dest": "--checkpoint_path",
+        "attributes": {
+            "type": "str",
+            "help": "path to checkpoint",
+            "default": "../models"
+        }
     },
     {
-        "flag": "--top_k",
-        "name": "top_k",
-        "type": "int",
-        "help": "Number of top predictions (default 3)",
-        "default": 3
+        "dest": "--top_k",
+        "attributes": {
+            "type": "int",
+            "help": "Number of top predictions (default 3)",
+            "default": 3
+        }
     },
     {
-        "flag": "--category_names",
-        "name": "category_names",
-        "type": "str",
-        "help": "File path to JSON file containing class names",
-        "default": "../assets/cat_to_name.json"
+        "dest": "--category_names",
+        "attributes": {
+            "type": "str",
+            "help": "File path to JSON file containing class names",
+            "default": "../assets/cat_to_name.json"
+        }
     },
     {
-        "flag": "--gpu",
-        "name": "gpu",
-        "type": "bool",
-        "help": "True to use GPU, otherwise false (default true)",
-        "default": false
+        "dest": "--gpu",
+        "attributes": {
+            "help": "Specify to request GPU",
+            "action": "store_true"
+        }
     }
 ]

@@ -146,7 +146,7 @@ def run_inference(model, device, image, top_k):
     
     Returns top probabilities and labels
     '''
-    print('Peforming inference...', end='', flush=True)
+    print('Performing inference...', end='', flush=True)
     image = image.unsqueeze(0)
     model.to(device)
     image.to(device)

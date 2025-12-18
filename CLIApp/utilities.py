@@ -39,22 +39,15 @@ def get_input_args(arg_template):
     # get template
     arguments = get_template(arg_template)
 
+    # build arguments
     parser = argparse.ArgumentParser(exit_on_error=False)
     for argument in arguments:
-        if argument["flag"] is None:
-            parser.add_argument(
-                argument["name"],
-                type=eval(argument["type"]),
-                help=argument["help"],
-                default=argument["default"]
-            )
-        else: 
-            parser.add_argument(
-                argument["flag"],
-                type=eval(argument["type"]),
-                help=argument["help"],
-                default=argument["default"]
-            )
+        # If 'type' is included, replace the string with the actual Python type
+        type_str =  argument['attributes'].get('type')
+        if type_str is not None:
+            argument['attributes']['type'] = eval(type_str)
+        
+        parser.add_argument(argument['dest'], **argument['attributes'])
             
     try:
         results = parser.parse_args()

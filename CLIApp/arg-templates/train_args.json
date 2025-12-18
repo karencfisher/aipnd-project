@@ -1,44 +1,48 @@
 [
     {
-        "flag": null,
-        "type": "str",
-        "name": "data_directory",
-        "help": "Path to the image files",
-        "default": null
+        "dest": "data_directory",
+        "attributes" : {
+            "type": "str",
+            "help": "Path to the image files"
+        }
     },
     {
-        "flag": "--save_dir",
-        "type": "str",
-        "name": "save_dir",
-        "help": "Directory in which to save checkpointed model",
-        "default": "../models"
+        "dest": "--save_dir",
+        "attributes": {
+            "type": "str",
+            "help": "Directory in which to save checkpointed model",
+            "default": "../models"
+        }
     },
     {
-        "flag": "--arch",
-        "type": "str",
-        "name": "arch",
-        "help": "Name of the Torchvision model to train",
-        "default": "vgg13"
+        "dest": "--arch",
+        "attributes": {
+            "type": "str",
+            "help": "Name of the Torchvision model to train",
+            "default": "vgg13"
+        }
     },
     {
-        "flag": "--learning_rate",
-        "type": "float",
-        "name": "learning_rate",
-        "help": "Learning rate",
-        "default": 0.01
+        "dest": "--learning_rate",
+        "attributes" : {
+            "type": "float",
+            "help": "Learning rate",
+            "default": 0.01
+        }
     },
     {
-        "flag": "--hidden_units",
-        "type": "list",
-        "name": "hidden_units",
-        "help": "units in each hidden layer in an array [value, value, ...]",
-        "default": [512]
+        "dest": "--hidden_units",
+        "attributes" : {
+            "type": "list",
+            "help": "units in each hidden layer in an array [value, value, ...]",
+            "default": [512]
+        }
     },
     {
-        "flag": "--gpu",
-        "type": "bool",
-        "name": "gpu",
-        "help": "Whether to use GPU (default is true)",
-        "default": true
+        "dest": "--gpu",
+        "attributes": {
+            "help": "Specify to request GPU",
+            "action": "store_true"
+        }
     }
 ]

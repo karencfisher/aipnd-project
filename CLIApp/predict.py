@@ -7,7 +7,7 @@ import os
 import json
 from time import time
 
-from CLIApp.utilities import get_input_args
+from CLIApp.utilities import get_input_args, Timer
 
 
 def sniff_gpu(gpu):
@@ -170,7 +170,7 @@ def run_inference(model, device, image, top_k):
     print(' done!')
     return top_ps, top_labels
 
-def display_result(cat_to_name, results, elapsed_time):
+def display_result(cat_to_name, results, timer):
     '''
     Displays formatted results to STDOUT
     
@@ -180,16 +180,12 @@ def display_result(cat_to_name, results, elapsed_time):
     Returns None
     '''
     # print elapsed time
-    hours = int(elapsed_time // 3600)
-    elapsed_time %= 3600
-    minutes = int(elapsed_time // 60)
-    seconds = elapsed_time % 60
-    print(f'Time taken: {hours:02d}:{minutes:02d}:{seconds:06.3f}')
+    print(f'Time taken: {timer()}')
     
     # print prediction
     predicted_index = np.argmax(results[0])
     predicted_label = int(results[1][predicted_index])
-    print(f'\npredicted flower is {cat_to_name[predicted_label]}')
+    print(f'\nPredicted flower is {cat_to_name[predicted_label]}')
     
     # determine spacing for tabular results
     max_spaces = max([len(name) for name in cat_to_name.values()]) + 10
@@ -221,8 +217,10 @@ if __name__ == '__main__':
     if device is None:
         exit()
             
+    # Start a timer
+    timer = Timer()
+    
     # Load model checkpoint
-    start_time = time()
     model = load_checkpoint(
         os.path.join(args.checkpoint_path, args.model_checkpoint), 
         device
@@ -243,22 +241,8 @@ if __name__ == '__main__':
     results = run_inference(model, device, processed_image, args.top_k)
     if results is None:
         exit()
-    elapsed_time = time() - start_time
         
     # display results
-    display_result(names, results, elapsed_time)
-    
-    
-        
-    
-            
-    
-            
-    
-            
-    
-        
-    
-    
+    display_result(names, results, timer)
     
     

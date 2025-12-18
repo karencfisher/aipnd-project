@@ -1,7 +1,32 @@
 import argparse
 import json
 import os
+from time import time
 
+
+class Timer:
+    '''
+    Timer -- times a process
+    
+    Use:
+    Start timer by instantiating instance of this class, e.g.
+        timer = Timer()
+        
+    Get elapsed time by calling the instance, e.g.
+        elapsed_time = timer()
+        
+    Returns elapsed time as a string in the form hh:mm:ss.sss
+    '''
+    def __init__(self):
+        self.start_time = time()
+        
+    def __call__(self):
+        elapsed_time = time() - self.start_time
+        hours = int(elapsed_time // 3600)
+        elapsed_time %= 3600
+        minutes = int(elapsed_time // 60)
+        seconds = elapsed_time % 60
+        return f'{hours:02d}:{minutes:02d}:{seconds:06.3f}'
 
 def get_input_args(arg_template):
     '''
@@ -38,7 +63,7 @@ def get_input_args(arg_template):
         return None
     return results
        
-# Helper function
+# Helper function for get_input_args
 def get_template(arg_template):
     '''
     Helper function to open arguments template

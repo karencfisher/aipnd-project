@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import json
-from time import time
 
 from CLIApp.utilities import get_input_args, Timer
 

@@ -5,11 +5,45 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import json
+from time import time
 
 from CLIApp.utilities import get_input_args
 
 
+def sniff_gpu(gpu):
+    '''
+    Check for GPU if requested
+    
+    :param gpu: Request GPU (bool)
+    
+    Returns device, 'cuda' or 'cpu'
+    '''
+    if args.gpu:
+        # Verify GPU is available and enabled
+        if not torch.cuda.is_available():
+            while True:
+                print("GPU is not detected on this platform, or it is not enabled.")
+                response = input("Proceed on CPU ('yes' or 'no')? ").lower()
+                if response == 'no' or response == 'n':
+                    return None
+                elif response == 'yes' or response == 'y':
+                    break
+                else:
+                    print('Invalid response')
+        else:
+            print("Inferring on GPU")
+            return 'cuda'
+    print("Inferring on CPU")
+    return 'cpu'
+    
 def get_cat_names(category_names_file):
+    '''
+    Retrieve the category name mapping
+    
+    :param category_names_file: relative file path for category name JSON
+    
+    Returns dictionary mapping category ids to names
+    '''
     abs_path = os.path.dirname(os.path.abspath(__file__))
     full_path = os.path.join(abs_path, category_names_file)
     try:
@@ -22,14 +56,20 @@ def get_cat_names(category_names_file):
     return {int(key): value for key, value in names.items()}
 
 def load_checkpoint(filepath, device):
-    # Load the checkpoint
-    print('Loading model...', end='')
+    '''
+    Load the model checkpoint
+    
+    :param filepath: Relative path to the checkpoint
+    :param device: Device ('cpu' or 'cuda')
+    '''
+    print('Loading model...', end='', flush=True)
     try:
+        # load checkpoint
         abs_path = os.path.dirname(os.path.abspath(__file__))
         full_path = os.path.join(abs_path, filepath)
         checkpoint = torch.load(full_path, weights_only=False, map_location=torch.device(device))
     
-        # Get base model
+        # get base model
         model = getattr(models, checkpoint['arch'])(weights='DEFAULT')
         for param in model.parameters():
             param.requires_grad = False
@@ -46,7 +86,14 @@ def load_checkpoint(filepath, device):
     return model
 
 def process_image(image_file_path):
-    print('Process image...', end='')
+    '''
+    Process the image for inference
+    
+    :param image_file_path: Relative path to the image file
+    
+    Returns processed image
+    '''
+    print('Process image...', end='', flush=True)
     # get the image
     try:
         abs_path = os.path.dirname(os.path.abspath(__file__))
@@ -90,13 +137,24 @@ def process_image(image_file_path):
     return torch.from_numpy(image_np_normalized).type(torch.FloatTensor)
 
 def run_inference(model, device, image, top_k):
-    print('Peforming inference...', end='')
+    '''
+    Run inference on the processed image
+    
+    :param model: trained model
+    :param device: device ('cpu' or 'cuda')
+    :param image: processed image
+    :param top_k: number of top k predictions
+    
+    Returns top probabilities and labels
+    '''
+    print('Peforming inference...', end='', flush=True)
     image = image.unsqueeze(0)
     model.to(device)
     image.to(device)
 
     model.eval()
     with torch.no_grad():
+        # Run forward pass and gets results
         logps = model.forward(image)
         ps = torch.exp(logps)
         top_ps, top_class = ps.topk(top_k, dim=1)
@@ -105,44 +163,47 @@ def run_inference(model, device, image, top_k):
         top_ps = top_ps.detach().cpu().numpy().tolist()[0]
         top_class = top_class.detach().cpu().numpy()[0]
         
+        # map top_class to actual labels
         idx_to_class = {val: key for key, val in model.class_to_idx.items()}
-        top_labels = [idx_to_class[lab] for lab in top_class]
+        top_labels = [idx_to_class[label] for label in top_class]
         
-    print(' done!\n')
+    print(' done!')
     return top_ps, top_labels
 
-def display_result(image, cat_to_name, results):
-    # stdout output
-    print(f'Predicted probabilities: {results[0]}')
-    print(f'Predicted labels: {results[1]}')
+def display_result(cat_to_name, results, elapsed_time):
+    '''
+    Displays formatted results to STDOUT
+    
+    :param cat_to_name: dictionary mapping ids to class names
+    :param results: inference results
+    
+    Returns None
+    '''
+    # print elapsed time
+    hours = int(elapsed_time // 3600)
+    elapsed_time %= 3600
+    minutes = int(elapsed_time // 60)
+    seconds = elapsed_time % 60
+    print(f'Time taken: {hours:02d}:{minutes:02d}:{seconds:06.3f}')
+    
+    # print prediction
     predicted_index = np.argmax(results[0])
     predicted_label = int(results[1][predicted_index])
-    print(f'predicted flower is {cat_to_name[predicted_label]} ',
-                                 f'prob = {results[0][predicted_index] * 100:.2f}%')
+    print(f'\npredicted flower is {cat_to_name[predicted_label]}')
     
-    # nice output
-    _, (ax1, ax2) = plt.subplots(ncols=2)
-
-    image = image.numpy().transpose((1, 2, 0))
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    image = std * image + mean
-    image = np.clip(image, 0, 1)
-
-    ax1.axis('off')
-    ax1.imshow(image)
-
-    ax2.barh(np.arange(len(results[1])), results[0])
-    ax2.set_aspect(0.1)
-    ax2.set_yticks(np.arange(len(results[1])))
-    ax2.set_yticklabels([cat_to_name[int(x)] for x in results[1]], size='small')
-
-    ax2.set_title('Class Probability')
-    ax2.set_xlim(0, 1.1)
-
-    plt.tight_layout()
-    plt.show()
-
+    # determine spacing for tabular results
+    max_spaces = max([len(name) for name in cat_to_name.values()]) + 10
+    spacing = lambda x: " " * (max_spaces - len(x))
+        
+    # print tabular results
+    print(f'\nTop {len(results[0])} predictions:')
+    print(f'\nFlower name{spacing("Flower name")}Probability')
+    print("-" * (max_spaces + 13))
+    for result in zip(results[1], results[0]):
+        name = cat_to_name[int(result[0])].title()
+        spaces = max_spaces - len(name)
+        print(f'{name}{" " * spaces}{result[1] * 100:.2f}%')
+    print()
 
 if __name__ == '__main__':
     # get CL arguments
@@ -156,18 +217,12 @@ if __name__ == '__main__':
         exit()
     
     # Check gpu argument
-    device = 'cpu'
-    if args.gpu:
-        # Verify GPU is available and enabled
-        if not torch.cuda.is_available():
-            print("GPU is not detected on this platform, or is not enabled.")
-            response = input("Proceed on CPU? (yes, no)")
-            if response.lower() == 'no' or response.lower() == 'n':
-                exit()
-        else:
-            device = 'cuda'
+    device = sniff_gpu(args.gpu)
+    if device is None:
+        exit()
             
     # Load model checkpoint
+    start_time = time()
     model = load_checkpoint(
         os.path.join(args.checkpoint_path, args.model_checkpoint), 
         device
@@ -188,9 +243,10 @@ if __name__ == '__main__':
     results = run_inference(model, device, processed_image, args.top_k)
     if results is None:
         exit()
+    elapsed_time = time() - start_time
         
     # display results
-    display_result(processed_image, names, results)
+    display_result(names, results, elapsed_time)
     
     
         

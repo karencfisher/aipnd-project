@@ -3,14 +3,14 @@
         "dest": "data_directory",
         "attributes" : {
             "type": "str",
-            "help": "Path to the image files"
+            "help": "Relative path to the image files"
         }
     },
     {
         "dest": "--save_dir",
         "attributes": {
             "type": "str",
-            "help": "Directory in which to save checkpointed model",
+            "help": "Relative path in which to save checkpointed model",
             "default": "../models"
         }
     },
@@ -34,7 +34,7 @@
         "dest": "--hidden_units",
         "attributes" : {
             "type": "list",
-            "help": "units in each hidden layer in an array [value, value, ...]",
+            "help": "Number of inits in each hidden layer, in an array [value, value, ...]",
             "default": [512]
         }
     },

@@ -54,7 +54,7 @@ def get_cat_names(category_names_file):
     
     return {int(key): value for key, value in names.items()}
 
-def load_checkpoint(filepath, device):
+def load_checkpoint(checkpoint_file_path, device):
     '''
     Load the model checkpoint
     
@@ -65,7 +65,7 @@ def load_checkpoint(filepath, device):
     try:
         # load checkpoint
         abs_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(abs_path, filepath)
+        full_path = os.path.join(abs_path, checkpoint_file_path)
         checkpoint = torch.load(full_path, weights_only=False, map_location=torch.device(device))
     
         # get base model
@@ -220,10 +220,7 @@ if __name__ == '__main__':
     timer = Timer()
     
     # Load model checkpoint
-    model = load_checkpoint(
-        os.path.join(args.checkpoint_path, args.model_checkpoint), 
-        device
-    )
+    model = load_checkpoint(args.model_checkpoint, device)
     if model is None:
         exit()
         

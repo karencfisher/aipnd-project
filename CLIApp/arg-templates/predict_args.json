@@ -3,7 +3,7 @@
         "dest": "image_file_path",
         "attributes" : {
             "type": "str",
-            "help": "Path to the image file"
+            "help": "Relative path to the image file"
         }
     },
     {
@@ -11,14 +11,6 @@
         "attributes": {
             "type": "str",
             "help": "The checkpointed model to use"
-        }
-    },
-    {
-        "dest": "--checkpoint_path",
-        "attributes": {
-            "type": "str",
-            "help": "path to checkpoint",
-            "default": "../models"
         }
     },
     {
@@ -33,7 +25,7 @@
         "dest": "--category_names",
         "attributes": {
             "type": "str",
-            "help": "File path to JSON file containing class names",
+            "help": "relative path to JSON file containing class names",
             "default": "../assets/cat_to_name.json"
         }
     },

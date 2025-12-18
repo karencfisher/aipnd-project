@@ -27,6 +27,17 @@ class Timer:
         minutes = int(elapsed_time // 60)
         seconds = elapsed_time % 60
         return f'{hours:02d}:{minutes:02d}:{seconds:06.3f}'
+    
+def get_full_path(path):
+    '''
+    Change relative to absolute path
+    
+    :param path: relative path
+    
+    Returns absolute path
+    '''
+    abs_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(abs_path, '..', path)
 
 def get_input_args(arg_template):
     '''

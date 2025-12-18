@@ -26,7 +26,7 @@
         "attributes": {
             "type": "str",
             "help": "relative path to JSON file containing class names",
-            "default": "../assets/cat_to_name.json"
+            "default": "assets/cat_to_name.json"
         }
     },
     {

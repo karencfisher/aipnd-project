@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import json
 
-from CLIApp.utilities import get_input_args, Timer
+from CLIApp.utilities import get_input_args, Timer, get_full_path
 
 
 def sniff_gpu(gpu):
@@ -17,7 +17,7 @@ def sniff_gpu(gpu):
     
     Returns device, 'cuda' or 'cpu'
     '''
-    if args.gpu:
+    if gpu:
         # Verify GPU is available and enabled
         if not torch.cuda.is_available():
             while True:
@@ -43,8 +43,7 @@ def get_cat_names(category_names_file):
     
     Returns dictionary mapping category ids to names
     '''
-    abs_path = os.path.dirname(os.path.abspath(__file__))
-    full_path = os.path.join(abs_path, category_names_file)
+    full_path = get_full_path(category_names_file)
     try:
         with open(full_path, 'r') as FILE:
             names = json.load(FILE)
@@ -64,8 +63,7 @@ def load_checkpoint(checkpoint_file_path, device):
     print('Loading model...', end='', flush=True)
     try:
         # load checkpoint
-        abs_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(abs_path, checkpoint_file_path)
+        full_path = get_full_path(checkpoint_file_path)
         checkpoint = torch.load(full_path, weights_only=False, map_location=torch.device(device))
     
         # get base model
@@ -95,8 +93,7 @@ def process_image(image_file_path):
     print('Process image...', end='', flush=True)
     # get the image
     try:
-        abs_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(abs_path, image_file_path)
+        full_path = get_full_path(image_file_path)
         image = Image.open(full_path)
     except Exception as err:
         print(f'Error opening image: {err}')
@@ -131,7 +128,6 @@ def process_image(image_file_path):
     image_np_normalized = image_np_normalized.transpose((2, 0, 1))
     
     print(' done!')
-
     # Convert to PyTorch tensor
     return torch.from_numpy(image_np_normalized).type(torch.FloatTensor)
 
@@ -169,7 +165,7 @@ def run_inference(model, device, image, top_k):
     print(' done!')
     return top_ps, top_labels
 
-def display_result(cat_to_name, results, timer):
+def display_result(cat_to_name, results, elapsed_time):
     '''
     Displays formatted results to STDOUT
     
@@ -179,7 +175,7 @@ def display_result(cat_to_name, results, timer):
     Returns None
     '''
     # print elapsed time
-    print(f'Time taken: {timer()}')
+    print(f'Time taken: {elapsed_time}')
     
     # print prediction
     predicted_index = np.argmax(results[0])
@@ -224,10 +220,6 @@ if __name__ == '__main__':
     if model is None:
         exit()
         
-    # get full image path
-    abs_path = os.path.dirname(os.path.abspath(__file__))
-    full_image_path = os.path.join(abs_path, 'CLIApp', args.image_file_path)
-    
     # get and process image from file
     processed_image = process_image(args.image_file_path)
     if processed_image is None:
@@ -239,6 +231,6 @@ if __name__ == '__main__':
         exit()
         
     # display results
-    display_result(names, results, timer)
+    display_result(names, results, timer())
     
     

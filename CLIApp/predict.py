@@ -195,6 +195,7 @@ def display_result(cat_to_name, results, elapsed_time):
         spaces = max_spaces - len(name)
         print(f'{name}{" " * spaces}{result[1] * 100:.2f}%')
     print()
+    
 
 if __name__ == '__main__':
     # get CL arguments

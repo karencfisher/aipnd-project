@@ -1,3 +1,4 @@
+from torch.cuda import is_available
 import argparse
 import json
 import os
@@ -38,6 +39,32 @@ def get_full_path(path):
     '''
     abs_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(abs_path, '..', path)
+
+def sniff_gpu(gpu):
+    '''
+    Check for GPU if requested
+    
+    :param gpu: Request GPU (bool)
+    
+    Returns device, 'cuda' or 'cpu'
+    '''
+    if gpu:
+        # Verify GPU is available and enabled
+        if not is_available():
+            while True:
+                print("GPU is not detected on this platform, or it is not enabled.")
+                response = input("Proceed on CPU ('yes' or 'no')? ").lower()
+                if response == 'no' or response == 'n':
+                    return None
+                elif response == 'yes' or response == 'y':
+                    break
+                else:
+                    print('Invalid response')
+        else:
+            print("Inferring on GPU")
+            return 'cuda'
+    print("Inferring on CPU")
+    return 'cpu'
 
 def get_input_args(arg_template):
     '''

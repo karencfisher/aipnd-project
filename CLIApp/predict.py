@@ -6,34 +6,8 @@ import matplotlib.pyplot as plt
 import os
 import json
 
-from CLIApp.utilities import get_input_args, Timer, get_full_path
+from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu
 
-
-def sniff_gpu(gpu):
-    '''
-    Check for GPU if requested
-    
-    :param gpu: Request GPU (bool)
-    
-    Returns device, 'cuda' or 'cpu'
-    '''
-    if gpu:
-        # Verify GPU is available and enabled
-        if not torch.cuda.is_available():
-            while True:
-                print("GPU is not detected on this platform, or it is not enabled.")
-                response = input("Proceed on CPU ('yes' or 'no')? ").lower()
-                if response == 'no' or response == 'n':
-                    return None
-                elif response == 'yes' or response == 'y':
-                    break
-                else:
-                    print('Invalid response')
-        else:
-            print("Inferring on GPU")
-            return 'cuda'
-    print("Inferring on CPU")
-    return 'cpu'
     
 def get_cat_names(category_names_file):
     '''

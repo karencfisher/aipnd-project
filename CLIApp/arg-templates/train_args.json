@@ -7,7 +7,7 @@
         }
     },
     {
-        "dest": "--save_dir",
+        "dest": "--save_directory",
         "attributes": {
             "type": "str",
             "help": "Relative path in which to save checkpointed model",

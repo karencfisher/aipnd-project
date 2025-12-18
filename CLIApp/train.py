@@ -2,18 +2,19 @@ import torch
 from torch import nn
 from torchvision import models, datasets, transforms
 from collections import OrderedDict
+from tqdm import tqdm
 import os
 
-from CLIApp.utilities import get_input_args 
+from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu 
 
 
-def build_data_loaders(data_dir):
+def build_data_loaders(full_data_path):
     '''
     Build the data loaders
     
     :param data_dir: data directory
     
-    returns dictionary of data loaders
+    Returns dictionary of data loaders
     '''
     data_loaders = {}
     train_transforms = transforms.Compose([
@@ -35,11 +36,11 @@ def build_data_loaders(data_dir):
     
     try:
         image_datasets_train = datasets.ImageFolder(
-            os.path.join(data_dir, 'train'),
+            os.path.join(full_data_path, 'train'),
             transform=train_transforms
         )
         image_datasets_valid = datasets.ImageFolder(
-            os.path.join(data_dir, 'valid'),
+            os.path.join(full_data_path, 'valid'),
             transform=valid_transforms
         )
     except FileExistsError:
@@ -64,7 +65,7 @@ def get_base_model(model_name):
     
     :param model_name: model name
     
-    returns the model
+    Returns the model
     '''
     try:
         model = getattr(models, model_name)(weights='DEFAULT')
@@ -79,7 +80,7 @@ def get_classifier_input_features(model):
     
     :param model: The Torchvision model to be used
     
-    returns the input dimension
+    Returns the input dimension and pointer to the top node
     '''
     if hasattr(model, 'classifier'):
         return model.classifier[0].in_features, model.classifier
@@ -97,7 +98,7 @@ def build_classifier(input_features, hidden_units, output_features=102):
     :param hidden_units: units for each hidden layer (list)
     :param output_features: number of output features
     
-    returns Sequential object
+    Returns Sequential object
     '''
     layers = []
        
@@ -114,54 +115,156 @@ def build_classifier(input_features, hidden_units, output_features=102):
     
     return nn.Sequential(OrderedDict(layers))
     
-def train_model(model, data_loaders, learning_rate, epochs, gpu=True):
+def train_model(model, device, data_loaders, learning_rate, epochs):
     '''
-    Train the model, logging results
+    Train the model
     
     :param model: the model to be trained
     :param data_loader: dictionary of data loaders (train and validation)
     :param learning_rate: learning rate (float)
     :param epochs: number of epochs (int)
     
-    returns trained model
+    Returns None (model trained in place)
     '''
-    pass
+    criterion = nn.NLLLoss()
+    optimizer = torch.optim.Adam(model.classifier.parameters(), lr=learning_rate)
+    model.to(device)
 
-def validate_model(model, data_loader):
+    train_losses, valid_losses = [], []
+    for epoch in range(epochs):
+        print(f"Epoch {epoch+1}/{epochs}")
+        train_loss = 0
+        model.train()
+        for inputs, labels in tqdm(data_loaders['train'], desc='Training'):
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            optimizer.zero_grad()
+            logps = model.forward(inputs)
+            loss = criterion(logps, labels)
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item()
+
+        valid_loss, accuracy = validate_model(model, device, data_loaders['validate'])
+
+        train_losses.append(train_loss/len(data_loaders['train']))
+        valid_losses.append(valid_loss)
+        print(f'Train loss: {train_losses[-1]:.3f} - Valid loss: {valid_losses[-1]:.3f} - ',
+              f'Valid accuracy: {accuracy:.3f}\n')
+
+def validate_model(model, device, data_loader):
     '''
     Test the model, eithr on test or validation
     
     :param model: the model to test
     :param data_loader: the valid dataloader
     
-    returns loss, accuracy
+    Returns loss, accuracy
     '''
-    return (0, 0)
+    criterion = nn.NLLLoss()
+    test_loss = 0
+    test_accuracy = 0
+    model.eval()
+    with torch.no_grad():
+        for inputs, labels in tqdm(data_loader, desc='Validating'):
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            logps = model.forward(inputs)
+            loss = criterion(logps, labels)
+            test_loss += loss.item()
+
+            ps = torch.exp(logps)
+            _, top_class = ps.topk(1, dim=1)
+            equals = top_class == labels.view(*top_class.shape)
+            test_accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
+    loss = test_loss/len(data_loader)
+    accuracy = test_accuracy/len(data_loader)
+    return loss, accuracy
+
+def save_checkpoint(arch, hidden_units, model, class_to_idx, full_save_path):
+    '''
+    Save the checkpoint
+    
+    Checkpoints will be in the format of 
+    
+    <base_model>_n
+    
+    So subsequent checkpoints of same architecture can be persisted.
+    
+    :param arch: Name of the base model architecture (e.g., 'vgg16')
+    :param hidden_units: hidden values (list of ints)
+    :param model: The trained model
+    :param class_to_idx: Class to id mapping
+    :param full_save_path: Absolute path to checkpoints directory
+    
+    Returns None
+    '''
+    # Get previous versions (if any)
+    prev_checkpoints = sorted(os.listdir(os.path.join(full_save_path, f'{arch}_*.pth')))
+    
+    # Construct new checkpoint file name and save path
+    if len(prev_checkpoints) > 0:
+        last_version_num = int(prev_checkpoints[-1].strip().split('_')[1])
+        new_version = f'{arch}_{last_version_num + 1}'
+    else:
+        new_version = f'{arch}_1'
+    new_checkpoint_path = os.path.join(full_save_path, new_version)
+    
+    # Cache checkpoint information
+    checkpoint = {
+        "arch": "vgg16",
+        "classifier": model.classifier,
+        "state_dict": model.state_dict(),
+        "class_to_idx": class_to_idx,
+        "hidden_units": hidden_units
+    }
+    
+    torch.save(checkpoint, new_checkpoint_path)
 
 
 if __name__ == "__main__":
+    # Get CL arguments
     args = get_input_args('train_args.json')
+    if args is None:
+        exit()
+        
+    # Get full data path and save path and verify
+    full_data_path = get_full_path(args.data_directory)
+    if not os.path.exists(full_data_path):
+        print("Data directory is not found.")
+        exit()
+        
+    full_save_path = get_full_path(args.save_directory)
+    if not os.path.exists(full_save_path):
+        print("Save directory is not found.")
+        exit()
+        
+    # Verify GPU enabled and get device string
+    device = sniff_gpu(args.gpu)
+    if device is None:
+        exit()
     
-    data_loaders = build_data_loaders(args.data_directory)
+    # Build data loaders
+    data_loaders = build_data_loaders(full_data_path)
     if data_loaders is None:
-        print('Failed building data loaders')
         exit()
     
-    base_model = get_base_model(args.arch)
-    if base_model is None:
-        print('Failed loading base model')
+    # Download base model by name e.g., 'vgg16'
+    model = get_base_model(args.arch)
+    if model is None:
         exit()
         
-    input_features, clf = get_classifier_input_features(base_model)
+    # Get input features and top node 
+    input_features, clf_node = get_classifier_input_features(model)
     if input_features is None:
-        print("Failed getting classifier input dimensions")
         exit()
         
-    clf = build_classifier(input_features, args.hidden_units)
+    clf_node = build_classifier(input_features, args.hidden_units)
     
-    trained_model = train_model(base_model, data_loaders, args.learning_rate, args.epochs, args.gpu)
-    trained_model.class_to_idx = data_loaders['train'].class_to_idx
-    torch.save(trained_model.state_dict(), f'./models/.{args.arch}.pth')
+    train_model(model, data_loaders, args.learning_rate, args.epochs, device)
+    
+    save_checkpoint(args.arch, args.hidden_units, model, 
+                    data_loaders['train'].class_to_idx, full_save_path)
     
     
     

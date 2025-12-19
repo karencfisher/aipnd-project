@@ -125,8 +125,8 @@ def build_classifier(input_features, hidden_units, output_features=102):
     for i, hidden_unit in enumerate(literal_eval(hidden_units)):
         print(f'hidden_unit: {hidden_unit}')
         layers.append((f'h{i+1}', nn.Linear(input_dim, hidden_unit)))
-        input_dim = hidden_unit
         layers.append((f'relu{i+1}', nn.ReLU()))
+        input_dim = hidden_unit
     
     # append output layer
     layers.append(('output', nn.Linear(input_dim, output_features)))
@@ -307,12 +307,6 @@ if __name__ == "__main__":
         
     model = replace_classifier(model, args.hidden_units)
     if model is None:
-        exit()
-        
-    # debug only!
-    print(model)
-    answer = input("OK? ")
-    if answer != 'yes':
         exit()
     
     train_model(model, device, data_loaders, args.learning_rate, args.epochs)

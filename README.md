@@ -39,7 +39,7 @@ The goal of this project is to develop an image classifier capable of identifyin
 
 1. **Clone the Repository**:
 
-   *Note*: *Requires Git Large File System installed and tracking *.pth files.
+   *Note: Requires Git Large File System installed and tracking .pth files.*
    ```bash
    git clone https://github.com/your-username/aipnd-project.git
    cd aipnd-project

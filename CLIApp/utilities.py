@@ -61,9 +61,9 @@ def sniff_gpu(gpu):
                 else:
                     print('Invalid response')
         else:
-            print("Inferring on GPU")
+            print("Running on GPU")
             return 'cuda'
-    print("Inferring on CPU")
+    print("Running on CPU")
     return 'cpu'
 
 def get_input_args(arg_template):

@@ -11,7 +11,7 @@
         "attributes": {
             "type": "str",
             "help": "Relative path in which to save checkpointed model",
-            "default": "../models"
+            "default": "models"
         }
     },
     {
@@ -43,6 +43,14 @@
         "attributes": {
             "help": "Specify to request GPU",
             "action": "store_true"
+        }
+    },
+    {
+        "dest": "--epochs",
+        "attributes": {
+            "type": "int",
+            "help": "Number of epochs",
+            "default": 5
         }
     }
 ]

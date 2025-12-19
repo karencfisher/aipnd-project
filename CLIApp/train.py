@@ -3,6 +3,7 @@ from torch import nn
 from torchvision import models, datasets, transforms
 from collections import OrderedDict
 from tqdm import tqdm
+from fnmatch import filter
 import os
 
 from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu 
@@ -14,7 +15,7 @@ def build_data_loaders(full_data_path):
     
     :param data_dir: data directory
     
-    Returns dictionary of data loaders
+    Returns dictionary of data loaders and class to idx map
     '''
     data_loaders = {}
     train_transforms = transforms.Compose([
@@ -35,11 +36,11 @@ def build_data_loaders(full_data_path):
     ])
     
     try:
-        image_datasets_train = datasets.ImageFolder(
+        image_dataset_train = datasets.ImageFolder(
             os.path.join(full_data_path, 'train'),
             transform=train_transforms
         )
-        image_datasets_valid = datasets.ImageFolder(
+        image_dataset_valid = datasets.ImageFolder(
             os.path.join(full_data_path, 'valid'),
             transform=valid_transforms
         )
@@ -48,16 +49,16 @@ def build_data_loaders(full_data_path):
         return None
     
     data_loaders['train'] = torch.utils.data.DataLoader(
-        image_datasets_train,
+        image_dataset_train,
         batch_size=64,
         shuffle=True
     )
-    data_loaders['valid'] = torch.utils.data.DataLoader(
-        image_datasets_valid,
+    data_loaders['validate'] = torch.utils.data.DataLoader(
+        image_dataset_valid,
         batch_size=64
     )
         
-    return data_loaders
+    return data_loaders, image_dataset_train.class_to_idx
     
 def get_base_model(model_name):
     '''
@@ -67,11 +68,18 @@ def get_base_model(model_name):
     
     Returns the model
     '''
+    print('Loading base model...')
     try:
         model = getattr(models, model_name)(weights='DEFAULT')
     except AttributeError as err:
         print(f'{model_name} is not a valid Torchvision model')
         return None
+    
+    # Turn off training of base model
+    for param in model.parameters():
+        param.requires_grad = False
+        
+    print('Done!')
     return model
 
 def get_classifier_input_features(model):
@@ -80,12 +88,15 @@ def get_classifier_input_features(model):
     
     :param model: The Torchvision model to be used
     
-    Returns the input dimension and pointer to the top node
+    Returns the input dimension
     '''
     if hasattr(model, 'classifier'):
-        return model.classifier[0].in_features, model.classifier
+        if isinstance(model.classifier, nn.Sequential):
+            return model.classifier[0].in_features
+        elif isinstance(model.classifier, nn.Linear):
+            return model.classifier.in_features
     elif hasattr(model, 'fc'):
-        return model.fc.in_features, model.fc
+        return model.fc.in_features
     else:
         print(f"Specified model does not have a recognized classifier structure.")
         return None
@@ -114,6 +125,34 @@ def build_classifier(input_features, hidden_units, output_features=102):
     layers.append(('softmax', nn.LogSoftmax(dim=1)))
     
     return nn.Sequential(OrderedDict(layers))
+
+def replace_classifier(model, hidden_units):
+    '''
+    Replaces the classifier in the model with a new one.
+
+    :param model: The base model
+    :param hidden_units: List of hidden units for the new classifier
+    
+    Returns the updated model
+    '''
+    input_features = get_classifier_input_features(model)
+    if input_features is None:
+        print("Error: Could not determine classifier structure.")
+        return None
+
+    # Build the new classifier
+    new_classifier = build_classifier(input_features, hidden_units)
+
+    # Replace the classifier directly in the model
+    if hasattr(model, 'classifier'):
+        model.classifier = new_classifier
+    elif hasattr(model, 'fc'):
+        model.fc = new_classifier
+    else:
+        print("Error: Model does not have a recognized classifier structure.")
+        return None
+
+    return model
     
 def train_model(model, device, data_loaders, learning_rate, epochs):
     '''
@@ -126,6 +165,7 @@ def train_model(model, device, data_loaders, learning_rate, epochs):
     
     Returns None (model trained in place)
     '''
+    print(f'Learning rate: {learning_rate}')
     criterion = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.classifier.parameters(), lr=learning_rate)
     model.to(device)
@@ -135,7 +175,7 @@ def train_model(model, device, data_loaders, learning_rate, epochs):
         print(f"Epoch {epoch+1}/{epochs}")
         train_loss = 0
         model.train()
-        for inputs, labels in tqdm(data_loaders['train'], desc='Training'):
+        for inputs, labels in tqdm(data_loaders['train'], desc='Training', ascii=' ='):
             inputs, labels = inputs.to(device), labels.to(device)
 
             optimizer.zero_grad()
@@ -166,7 +206,7 @@ def validate_model(model, device, data_loader):
     test_accuracy = 0
     model.eval()
     with torch.no_grad():
-        for inputs, labels in tqdm(data_loader, desc='Validating'):
+        for inputs, labels in tqdm(data_loader, desc='Validating', ascii=' ='):
             inputs, labels = inputs.to(device), labels.to(device)
 
             logps = model.forward(inputs)
@@ -199,20 +239,21 @@ def save_checkpoint(arch, hidden_units, model, class_to_idx, full_save_path):
     
     Returns None
     '''
+    print('Saving checkpoint... ', end='', flush=True)
     # Get previous versions (if any)
-    prev_checkpoints = sorted(os.listdir(os.path.join(full_save_path, f'{arch}_*.pth')))
+    prev_checkpoints = sorted(filter(os.listdir(full_save_path), f'{arch}_*.pth'))
     
     # Construct new checkpoint file name and save path
     if len(prev_checkpoints) > 0:
         last_version_num = int(prev_checkpoints[-1].strip().split('_')[1])
-        new_version = f'{arch}_{last_version_num + 1}'
+        new_version = f'{arch}_{last_version_num + 1}.pth'
     else:
-        new_version = f'{arch}_1'
+        new_version = f'{arch}_1.pth'
     new_checkpoint_path = os.path.join(full_save_path, new_version)
     
     # Cache checkpoint information
     checkpoint = {
-        "arch": "vgg16",
+        "arch": arch,
         "classifier": model.classifier,
         "state_dict": model.state_dict(),
         "class_to_idx": class_to_idx,
@@ -220,6 +261,7 @@ def save_checkpoint(arch, hidden_units, model, class_to_idx, full_save_path):
     }
     
     torch.save(checkpoint, new_checkpoint_path)
+    print('done!')
 
 
 if __name__ == "__main__":
@@ -244,8 +286,9 @@ if __name__ == "__main__":
     if device is None:
         exit()
     
+    timer = Timer()
     # Build data loaders
-    data_loaders = build_data_loaders(full_data_path)
+    data_loaders, class_to_idx = build_data_loaders(full_data_path)
     if data_loaders is None:
         exit()
     
@@ -254,19 +297,13 @@ if __name__ == "__main__":
     if model is None:
         exit()
         
-    # Get input features and top node 
-    input_features, clf_node = get_classifier_input_features(model)
-    if input_features is None:
+    model = replace_classifier(model, args.hidden_units)
+    if model is None:
         exit()
-        
-    clf_node = build_classifier(input_features, args.hidden_units)
     
-    train_model(model, data_loaders, args.learning_rate, args.epochs, device)
+    train_model(model, device, data_loaders, args.learning_rate, args.epochs)
     
-    save_checkpoint(args.arch, args.hidden_units, model, 
-                    data_loaders['train'].class_to_idx, full_save_path)
+    save_checkpoint(args.arch, args.hidden_units, model, class_to_idx, full_save_path)
     
-    
-    
-    
-    
+    print(f'Time taken: {timer()}\n')
+

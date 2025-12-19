@@ -245,7 +245,7 @@ def save_checkpoint(arch, hidden_units, model, class_to_idx, full_save_path):
     
     # Construct new checkpoint file name and save path
     if len(prev_checkpoints) > 0:
-        last_version_num = int(prev_checkpoints[-1].strip().split('_')[1])
+        last_version_num = int(prev_checkpoints[-1].strip().split('_')[1].split('.')[0])
         new_version = f'{arch}_{last_version_num + 1}.pth'
     else:
         new_version = f'{arch}_1.pth'

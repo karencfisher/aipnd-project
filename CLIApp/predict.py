@@ -1,9 +1,14 @@
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import torch
 from torchvision import models
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import json
 
 from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu

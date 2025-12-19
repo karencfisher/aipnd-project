@@ -1,10 +1,15 @@
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import torch
 from torch import nn
 from torchvision import models, datasets, transforms
 from collections import OrderedDict
 from tqdm import tqdm
 from fnmatch import filter
-import os
 
 from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu 
 

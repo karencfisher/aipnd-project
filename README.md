@@ -67,13 +67,21 @@ The goal of this project is to develop an image classifier capable of identifyin
 ### Training the Model
 To train the model, use the `train.py` script. Example:
 ```bash
-python -m CLIApp.train --data_dir flowers --save_dir models --arch vgg16 --learning_rate 0.001 --hidden_units 512 --epochs 10 --gpu
+python -m CLIApp.train flowers --save_dir models --arch vgg16 --learning_rate 0.001 --hidden_units [512,256] --epochs 10 --gpu
+```
+For full parameters:
+```
+python -m CLIApp.train -h
 ```
 
 ### Making Predictions
 To make predictions on new images, use the `predict.py` script. Example:
 ```bash
-python -m CLIApp.predict --image_file_path path/to/image.jpg --model_checkpoint models/checkpoint.pth --category_names assets/cat_to_name.json --top_k 5 --gpu
+python -m CLIApp.predict images/Sunflower_from_Silesia.jpg models/checkpoint.pth --top_k 5 --gpu
+```
+For full parameters:
+```
+python -m CLIApp.predict -h
 ```
 
 ## Features

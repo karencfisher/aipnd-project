@@ -20,6 +20,8 @@ The goal of this project is to develop an image classifier capable of identifyin
 │   ├── train.py                    # Script for training the model
 │   ├── utilities.py                # Helper functions
 │   ├── arg-templates/              # JSON templates for CLI arguments
+│      ├── predict_args.json        # CLI Argument template for predict.py
+│      ├── train_args.json          # CLI Argument template for train.py
 ├── flowers/                        # Dataset of flower images
 │   ├── train/                      # Training images
 │   ├── valid/                      # Validation images

@@ -10,6 +10,7 @@ from torchvision import models, datasets, transforms
 from collections import OrderedDict
 from tqdm import tqdm
 from fnmatch import filter
+from ast import literal_eval
 
 from CLIApp.utilities import get_input_args, Timer, get_full_path, sniff_gpu 
 
@@ -120,10 +121,12 @@ def build_classifier(input_features, hidden_units, output_features=102):
        
     # Construct hidden layers
     input_dim = input_features
-    for i, hidden_unit in enumerate(hidden_units):
+    print(f'hidden_units: {hidden_units}')
+    for i, hidden_unit in enumerate(literal_eval(hidden_units)):
+        print(f'hidden_unit: {hidden_unit}')
         layers.append((f'h{i+1}', nn.Linear(input_dim, hidden_unit)))
         input_dim = hidden_unit
-        layers.append(('relu', nn.ReLU()))
+        layers.append((f'relu{i+1}', nn.ReLU()))
     
     # append output layer
     layers.append(('output', nn.Linear(input_dim, output_features)))
@@ -195,7 +198,7 @@ def train_model(model, device, data_loaders, learning_rate, epochs):
         train_losses.append(train_loss/len(data_loaders['train']))
         valid_losses.append(valid_loss)
         print(f'Train loss: {train_losses[-1]:.3f} - Valid loss: {valid_losses[-1]:.3f} - ',
-              f'Valid accuracy: {accuracy:.3f}\n')
+              f'Valid accuracy: {accuracy * 100:.2f}%\n')
 
 def validate_model(model, device, data_loader):
     '''
@@ -304,6 +307,12 @@ if __name__ == "__main__":
         
     model = replace_classifier(model, args.hidden_units)
     if model is None:
+        exit()
+        
+    # debug only!
+    print(model)
+    answer = input("OK? ")
+    if answer != 'yes':
         exit()
     
     train_model(model, device, data_loaders, args.learning_rate, args.epochs)

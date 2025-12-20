@@ -121,9 +121,7 @@ def build_classifier(input_features, hidden_units, output_features=102):
        
     # Construct hidden layers
     input_dim = input_features
-    print(f'hidden_units: {hidden_units}')
     for i, hidden_unit in enumerate(literal_eval(hidden_units)):
-        print(f'hidden_unit: {hidden_unit}')
         layers.append((f'h{i+1}', nn.Linear(input_dim, hidden_unit)))
         layers.append((f'relu{i+1}', nn.ReLU()))
         input_dim = hidden_unit

@@ -307,12 +307,6 @@ if __name__ == "__main__":
     model = replace_classifier(model, args.hidden_units)
     if model is None:
         exit()
-        
-    # debug only!
-    print(model)
-    answer = input("OK? ")
-    if answer != 'yes':
-        exit()
     
     train_model(model, device, data_loaders, args.learning_rate, args.epochs)
     

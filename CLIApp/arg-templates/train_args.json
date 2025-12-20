@@ -27,7 +27,7 @@
         "attributes" : {
             "type": "float",
             "help": "Learning rate",
-            "default": 0.01
+            "default": 0.001
         }
     },
     {

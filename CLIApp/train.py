@@ -156,9 +156,6 @@ def replace_classifier(model, hidden_units):
         model.classifier = new_classifier
     elif hasattr(model, 'fc'):
         model.fc = new_classifier
-    else:
-        print("Error: Model does not have a recognized classifier structure.")
-        return None
 
     return model
     
@@ -175,7 +172,8 @@ def train_model(model, device, data_loaders, learning_rate, epochs):
     '''
     print(f'Learning rate: {learning_rate}')
     criterion = nn.NLLLoss()
-    optimizer = torch.optim.Adam(model.classifier.parameters(), lr=learning_rate)
+    top = model.classifier if hasattr(model, 'classifier') else model.fc
+    optimizer = torch.optim.Adam(top.parameters(), lr=learning_rate)
     model.to(device)
 
     train_losses, valid_losses = [], []
@@ -260,9 +258,10 @@ def save_checkpoint(arch, hidden_units, model, class_to_idx, full_save_path):
     new_checkpoint_path = os.path.join(full_save_path, new_version)
     
     # Cache checkpoint information
+    top = model.classifier if hasattr(model, 'classifier') else model.fc
     checkpoint = {
         "arch": arch,
-        "classifier": model.classifier,
+        "classifier": top,
         "state_dict": model.state_dict(),
         "class_to_idx": class_to_idx,
         "hidden_units": hidden_units
@@ -307,6 +306,12 @@ if __name__ == "__main__":
         
     model = replace_classifier(model, args.hidden_units)
     if model is None:
+        exit()
+        
+    # debug only!
+    print(model)
+    answer = input("OK? ")
+    if answer != 'yes':
         exit()
     
     train_model(model, device, data_loaders, args.learning_rate, args.epochs)

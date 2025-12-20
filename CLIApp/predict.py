@@ -51,7 +51,13 @@ def load_checkpoint(checkpoint_file_path, device):
             param.requires_grad = False
             
         # loading weights, classifier, and class indexes
-        model.classifier = checkpoint['classifier']
+        # Replace the classifier directly in the model
+        if hasattr(model, 'classifier'):
+            model.classifier = checkpoint['classifier']
+        elif hasattr(model, 'fc'):
+            model.fc = checkpoint['classifier']
+        else:
+            raise ValueError("Unknown classifier in model")
         model.load_state_dict(checkpoint['state_dict'])
         model.class_to_idx = checkpoint['class_to_idx']
         

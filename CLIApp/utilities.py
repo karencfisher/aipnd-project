@@ -46,13 +46,13 @@ def sniff_gpu(gpu):
     
     :param gpu: Request GPU (bool)
     
-    Returns device, 'cuda' or 'cpu'
+    Returns device, 'cuda', 'cpu', or None if exiting
     '''
     if gpu:
         # Verify GPU is available and enabled
         if not is_available():
             while True:
-                print("GPU is not detected on this platform, or it is not enabled.")
+                print("GPU is not detected on this platform or it is not enabled.")
                 response = input("Proceed on CPU ('yes' or 'no')? ").lower()
                 if response == 'no' or response == 'n':
                     return None

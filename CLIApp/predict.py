@@ -67,11 +67,12 @@ def load_checkpoint(checkpoint_file_path, device):
     print(' done!')
     return model
 
-def process_image(image_file_path):
+def process_image(image_file_path, device):
     '''
     Process the image for inference
     
     :param image_file_path: Relative path to the image file
+    :param device: Device, 'cuda' or 'cpu'
     
     Returns processed image
     '''
@@ -114,7 +115,8 @@ def process_image(image_file_path):
     
     print(' done!')
     # Convert to PyTorch tensor
-    return torch.from_numpy(image_np_normalized).type(torch.FloatTensor)
+    tensor_type = torch.cuda.FloatTensor if device == 'cuda' else torch.FloatTensor
+    return torch.from_numpy(image_np_normalized).type(tensor_type)
 
 def run_inference(model, device, image, top_k):
     '''
@@ -207,7 +209,7 @@ if __name__ == '__main__':
         exit()
         
     # get and process image from file
-    processed_image = process_image(args.image_file_path)
+    processed_image = process_image(args.image_file_path, device)
     if processed_image is None:
         exit()
         

@@ -35,7 +35,7 @@
         "attributes" : {
             "type": "str",
             "help": "Number of inits in each hidden layer, in an array [value, value, ...]",
-            "default": [512]
+            "default": "[512]"
         }
     },
     {
